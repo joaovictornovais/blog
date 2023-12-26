@@ -7,20 +7,26 @@ import net.bytebuddy.asm.Advice;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PostServiceTest {
 
     @Mock
     private PostRespository postRespository;
+
+    @InjectMocks
     private PostService postService;
 
     @BeforeEach
@@ -46,9 +52,18 @@ class PostServiceTest {
     }
 
     @Test
-    @Disabled
+    @DisplayName("Should show return a specific post")
     void findPostById() {
+        Post post = new Post();
+        post.setId(1L);
+        post.setTitle("Hello, world!");
 
+        when(postRespository.findById(1L)).thenReturn(Optional.of(post));
+
+        Post result = postService.findPostById(post.getId());
+
+        assertEquals(result, post);
+        
     }
 
     @Test
@@ -60,24 +75,38 @@ class PostServiceTest {
     }
 
     @Test
-    @Disabled
+    @DisplayName("Should return specific posts")
     void findPostByTitle() {
+        Post post = new Post();
+        post.setId(1L); post.setTitle("Hello, world!");
+
+        when(postRespository.findPostsByTitleContainingIgnoreCase(post.getTitle()))
+                .thenReturn(List.of(post));
+
+        List<Post> result = postService.findPostByTitle(post.getTitle());
+
+        verify(postRespository).findPostsByTitleContainingIgnoreCase(post.getTitle());
+
+        assertEquals(List.of(post), result);
+
     }
 
     @Test
-    @Disabled
+    @DisplayName("Should edit the Post")
     void editPost() {
-        Post data = new Post(1L, "Hello, world", "This is my first post", LocalDateTime.now(), "Welcome to my blog!");
-        postService.createPost(data);
+        Post post = new Post();
+        post.setId(1L); post.setTitle("Hello, world");
 
-        ArgumentCaptor<Post> postArgumentCaptor = ArgumentCaptor.forClass(Post.class);
+        when(postRespository.findById(post.getId())).thenReturn(Optional.of(post));
+        when(postRespository.save(post)).thenReturn(post);
 
-        PostDTO newPost = new PostDTO("Hellom again", "Just fixing!", LocalDateTime.now(), "Welcome to my blog!");
-        postService.editPost(data.getId(), new Post(newPost));
+        Post newPost = new Post();
+        newPost.setTitle("New title!");
 
-        verify(postRespository).save(postArgumentCaptor.getValue());
+        Post editedPost = postService.editPost(post.getId(), newPost);
 
-        assertThat(data).isNotEqualTo(postArgumentCaptor.getValue());
+
+        assertThat(post).isEqualTo(editedPost);
     }
 
     @Test
